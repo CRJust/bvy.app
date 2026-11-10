@@ -1,0 +1,41 @@
+.beavy-search { width: 100%; color: #32121f; font-family: inherit; }
+.beavy-search__label { display:block; margin-bottom:12px; color:#32121f; font-size:clamp(1.35rem,3vw,1.8rem); font-weight:750; letter-spacing:-.035em; }
+.beavy-search__input-wrap { display:flex; align-items:center; gap:10px; min-height:58px; padding:0 16px; border:1px solid #e7d8d0; border-radius:17px; background:#fffdfa; box-shadow:0 8px 28px rgba(50,18,31,.06); }
+.beavy-search__input-wrap:focus-within { border-color:#b65358; box-shadow:0 0 0 3px rgba(182,83,88,.12); }
+.beavy-search__search-icon { color:#9d6c68; font-size:1.8rem; line-height:1; }
+.beavy-search__input { width:100%; min-width:0; border:0; outline:0; background:transparent; color:#32121f; font-size:1rem; }
+.beavy-search__input::placeholder { color:#aa9891; }
+.beavy-search__clear { border:0; background:transparent; color:#9d6c68; font-size:1.4rem; cursor:pointer; }
+.beavy-search__hint { margin:8px 2px 18px; color:#806a65; font-size:.83rem; }
+.beavy-search__empty { display:flex; align-items:center; gap:12px; padding:16px; border-radius:15px; background:#f8f0e9; color:#80645f; }
+.beavy-search__empty span { font-size:1.4rem; }
+.beavy-search__empty p,.beavy-search__status,.beavy-search__error { margin:0; font-size:.9rem; line-height:1.45; }
+.beavy-search__status { padding:12px 2px; color:#806a65; }
+.beavy-search__error { padding:12px 14px; border-radius:12px; background:#fff0ef; color:#9b3439; }
+.beavy-search__families { display:grid; gap:10px; }
+.beavy-family { overflow:hidden; border:1px solid #eddfd8; border-radius:16px; background:#fffdfa; }
+.beavy-family__header { display:flex; align-items:center; gap:12px; width:100%; padding:15px 16px; border:0; background:transparent; color:inherit; text-align:left; cursor:pointer; }
+.beavy-family__copy { display:grid; flex:1; gap:4px; }
+.beavy-family__copy strong { font-size:1rem; font-weight:730; }
+.beavy-family__copy small { color:#947c75; font-size:.78rem; }
+.beavy-family__count { white-space:nowrap; color:#a54d53; font-size:.78rem; font-weight:700; }
+.beavy-family__chevron { color:#a54d53; font-size:1.35rem; }
+.beavy-family__preview { padding:0 16px 15px; }
+.beavy-family__preview-row { display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-top:1px solid #f1e8e3; color:#806a65; font-size:.82rem; }
+.beavy-family__view { margin-top:8px; padding:0; border:0; background:transparent; color:#a3474e; font-weight:700; cursor:pointer; }
+.beavy-family__products { padding:0 14px 12px; border-top:1px solid #f1e8e3; }
+.beavy-product { display:flex; align-items:center; gap:12px; padding:12px 2px; border-bottom:1px solid #f1e8e3; }
+.beavy-product:last-child { border-bottom:0; }
+.beavy-product__image { display:grid; flex:0 0 46px; width:46px; height:46px; place-items:center; overflow:hidden; border-radius:11px; background:#f7eee7; color:#9d6c68; font-size:1.25rem; }
+.beavy-product__image img { width:100%; height:100%; object-fit:contain; }
+.beavy-product__details { display:grid; flex:1; min-width:0; gap:4px; }
+.beavy-product__details strong { color:#32121f; font-size:.88rem; line-height:1.35; }
+.beavy-product__details small { color:#8a746d; font-size:.75rem; }
+.beavy-product__add { padding:8px 12px; border:0; border-radius:999px; background:#a9474f; color:#fffaf5; font-size:.8rem; font-weight:720; cursor:pointer; }
+.beavy-product__add:hover { background:#85343e; }
+@media (max-width:540px) {
+  .beavy-family__header { padding:13px 12px; }
+  .beavy-family__preview { padding-right:12px; padding-left:12px; }
+  .beavy-product { align-items:flex-start; gap:9px; }
+  .beavy-product__add { padding:7px 10px; }
+}
