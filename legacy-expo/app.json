@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "Beavy",
+    "slug": "beavy-expo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "beavyexpo",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "icon": "./assets/expo.icon"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FFF6EE",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/beavy-logo.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFF6EE",
+          "image": "./assets/images/beavy-logo.png",
+          "imageWidth": 76
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permite aplicației Beavy accesul la galerie pentru a importa fotografii cu liste de cumpărături.",
+          "cameraPermission": "Permite aplicației Beavy accesul la cameră pentru a fotografia lista de cumpărături.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permite aplicației Beavy accesul la cameră pentru a scana codurile de bare EAN ale produselor.",
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      "expo-status-bar",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "baseUrl": "/app",
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

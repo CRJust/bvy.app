@@ -39,3 +39,27 @@ Docs: https://docs.expo.dev/eas/index.md
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
 - Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+
+## Beavy Design System & UI/UX Standards
+
+This application strictly implements the **Beavy Design System** („Culorile din cămară”).  
+Always consult the `/design-system/` documentation before creating or modifying UI components:
+
+1. **Brand Identity:** Consult [`/design-system/brand-foundations.md`](file:///Users/iustin/Documents/beavy-expo/design-system/brand-foundations.md) and [`/design-system/color-system.md`](file:///Users/iustin/Documents/beavy-expo/design-system/color-system.md).
+2. **Tokens:** Import strictly from `src/constants/theme.ts`:
+   - Colors: `BeavyColors` (`buttermilk: #FFF6EE`, `cherry: #421726`, `strawberry: #F78D79`, `grapefruit: #FCE2DB`, `leek: #DBE3C6`, `muted: #765B60`, `rule: #EFE2D8`).
+   - Fonts: `BeavyFonts` (Manrope 400, 500, 600, 700, 800).
+   - Radius: `BeavyRadius` (sm: 8, md: 12, lg: 16, xl: 20, 2xl: 24, pill: 999).
+3. **Anti-AI-Slop Rules:**
+   - No generic purple or neon gradients.
+   - No chat emojis as UI icons; use `expo-symbols` (`SymbolView`) with discreet typographic fallbacks.
+   - No excessive card-in-card nesting.
+   - Touch targets must be at least 44×44 pt.
+4. **Motion & Feedback:**
+   - Subtle, snappy animations (120–220 ms) using `react-native-reanimated`.
+   - Always check `useReducedMotion()`.
+   - Provide tactile feedback with `triggerHaptic()`.
+5. **Specialized Skills:**
+   - `.agents/skills/beavy-design-system/SKILL.md` (Design system guide)
+   - `.agents/skills/beavy-ui-audit/SKILL.md` (Screen audit & critique)
+   - `.agents/skills/beavy-ui-implementation/SKILL.md` (Component implementation guide)

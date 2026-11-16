@@ -2,6 +2,8 @@
 
 # dependencies
 node_modules/
+google-studio/node_modules/
+google-studio/dist/
 
 # Expo
 .expo/
@@ -42,3 +44,10 @@ example
 /ios
 /android
 .env
+bvy.app/
+
+# Catalog enrichment cache & generated visual review reports
+scripts/.cache/
+scripts/output/
+scripts/scratch/
+*.xlsb

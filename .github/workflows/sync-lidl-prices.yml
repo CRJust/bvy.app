@@ -1,0 +1,55 @@
+name: Sync Lidl Official Prices
+
+on:
+  schedule:
+    # Rulează zilnic la ora 05:00 UTC (07:00 / 08:00 ora României), după actualizarea fișierului de către Lidl
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-lidl-prices
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: pip install pyxlsb
+
+      - name: Download and parse official Lidl prices
+        run: python3 scripts/sync-lidl-prices.py
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Merge Lidl prices into shelf catalog
+        run: node scripts/merge-lidl-into-shelf.mjs
+
+      - name: Commit and push updated catalog files
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/data/lidl-prices.json public/data/shelf-prices.json
+          if git diff --staged --quiet; then
+            echo "Nicio modificare de preț în lista oficială Lidl astăzi."
+          else
+            git commit -m "chore(lidl): actualizare zilnică prețuri oficiale Lidl [skip ci]"
+            git push
+          fi

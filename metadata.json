@@ -1,0 +1,6 @@
+{
+  "name": "Beavy",
+  "description": "Comparator inteligent de prețuri și coșuri de cumpărături pentru cele 9 mari supermarketuri din România.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
