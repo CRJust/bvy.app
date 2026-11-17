@@ -73,8 +73,10 @@ export function EanScannerModal({
   >('idle');
   const [cameraMessage, setCameraMessage] = useState<string | null>(null);
   const [fallbackSearch, setFallbackSearch] = useState('');
-  const [asyncMatchedProduct, setAsyncMatchedProduct] = useState<CanonicalProduct | null>(null);
-  const [isLookingUpEan, setIsLookingUpEan] = useState(false);
+  // Remote lookup result, keyed by the code it answers so a new scan never shows a stale match
+  const [asyncLookup, setAsyncLookup] = useState<{ code: string; product: CanonicalProduct | null }>(
+    { code: '', product: null }
+  );
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -175,13 +177,10 @@ export function EanScannerModal({
   }, [handleDetectedEan, stopCamera]);
 
   useEffect(() => {
-    if (!open) {
-      stopCamera();
-      setCameraStatus('idle');
-      return;
-    }
+    if (!open) return;
 
-    void startCamera();
+    // Next frame: the <video> element is mounted, and a modal closed right away never starts the camera
+    const frame = requestAnimationFrame(() => void startCamera());
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -191,28 +190,25 @@ export function EanScannerModal({
     window.addEventListener('keydown', onKeyDown);
 
     return () => {
+      cancelAnimationFrame(frame);
       window.removeEventListener('keydown', onKeyDown);
       stopCamera();
+      setCameraStatus('idle');
     };
   }, [open, onClose, startCamera, stopCamera]);
 
-  if (!open) return null;
-
   const activeCode = scannedEan ?? '';
   const validation = activeCode ? validateEanCode(activeCode) : null;
+  const isValidCode = Boolean(activeCode && validation?.valid);
 
+  // Must run on every render (before the early return below) to keep hook order stable
   useEffect(() => {
-    if (!activeCode || !validation?.valid) {
-      setAsyncMatchedProduct(null);
-      return;
-    }
-    const local = findCatalogProductByEan(activeCode, CATALOG);
-    if (local) {
-      setAsyncMatchedProduct(null);
-      return;
-    }
+    if (!open || !isValidCode || findCatalogProductByEan(activeCode, CATALOG)) return;
 
-    setIsLookingUpEan(true);
+    let cancelled = false;
+    const settle = (product: CanonicalProduct | null) => {
+      if (!cancelled) setAsyncLookup({ code: activeCode, product });
+    };
     fetch(`/api/catalog/search?q=${encodeURIComponent(activeCode)}&limit=5`)
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((data) => {
@@ -223,19 +219,21 @@ export function EanScannerModal({
           const p = (data.products as CanonicalProduct[]).find(
             (cand) => !cand.eanIsSynthetic && digits(cand.ean) === digits(activeCode)
           );
-          if (p) {
-            PRODUCT_MAP[p.id] = p;
-            setAsyncMatchedProduct(p);
-          } else {
-            setAsyncMatchedProduct(null);
-          }
+          if (p) PRODUCT_MAP[p.id] = p;
+          settle(p ?? null);
         } else {
-          setAsyncMatchedProduct(null);
+          settle(null);
         }
       })
-      .catch(() => setAsyncMatchedProduct(null))
-      .finally(() => setIsLookingUpEan(false));
-  }, [activeCode, validation?.valid]);
+      .catch(() => settle(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [open, activeCode, isValidCode]);
+
+  if (!open) return null;
+
+  const asyncMatchedProduct = asyncLookup.code === activeCode ? asyncLookup.product : null;
 
   const rawMatchedProduct =
     (activeCode && validation?.valid ? findCatalogProductByEan(activeCode, CATALOG) : null) ??

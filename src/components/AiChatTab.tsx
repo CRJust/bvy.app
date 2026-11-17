@@ -12,13 +12,13 @@ import {
   RotateCcw,
   Send,
   ShoppingBasket,
-  X,
 } from 'lucide-react';
 import { PRODUCT_MAP } from '../data/catalog.ts';
 import type { MissionConstraints } from '../App.tsx';
 import type {
   AiStructuredCard,
   BasketItem,
+  CanonicalProduct,
   ChatMessage,
   UserProfile,
 } from '../types.ts';
@@ -36,17 +36,17 @@ interface AiChatTabProps {
   missionBudgetRon?: number | null;
   missionMaxStores?: 1 | 2;
   onAddItemsToBasket: (
-    items: Array<{ productId: string; quantity: number }>,
+    items: { productId: string; quantity: number }[],
     constraints?: Partial<MissionConstraints>
   ) => void;
   onReplaceBasketFromAi: (
-    items: Array<{ productId: string; quantity: number }>,
+    items: { productId: string; quantity: number }[],
     constraints?: Partial<MissionConstraints>
   ) => void;
   onApplyEditsToBasket: (
     removeIds: string[],
-    swaps: Array<{ fromProductId: string; toProductId: string; quantity: number }>,
-    addItems: Array<{ productId: string; quantity: number }>,
+    swaps: { fromProductId: string; toProductId: string; quantity: number }[],
+    addItems: { productId: string; quantity: number }[],
     replaceExistingQuantities?: boolean,
     constraints?: Partial<MissionConstraints>
   ) => void;
@@ -57,7 +57,7 @@ interface AiChatTabProps {
 interface ActiveAiListContext {
   title: string;
   servings: number;
-  items: Array<{ productId: string; quantity: number }>;
+  items: { productId: string; quantity: number }[];
 }
 
 interface PersistedChatState {
@@ -135,9 +135,9 @@ function RecipeListCard({
   basket: BasketItem[];
   economyMode: boolean;
   applied: boolean;
-  onReplaceAndBasket: (selectedItems: Array<{ productId: string; quantity: number }>) => void;
-  onApplyAndContinue: (selectedItems: Array<{ productId: string; quantity: number }>) => void;
-  onApplyOnly: (selectedItems: Array<{ productId: string; quantity: number }>) => void;
+  onReplaceAndBasket: (selectedItems: { productId: string; quantity: number }[]) => void;
+  onApplyAndContinue: (selectedItems: { productId: string; quantity: number }[]) => void;
+  onApplyOnly: (selectedItems: { productId: string; quantity: number }[]) => void;
   onNavigateToBasket: () => void;
 }) {
   const [checkedIds, setCheckedIds] = useState<Record<string, boolean>>(() => {
@@ -487,6 +487,17 @@ function RecipeListCard({
   );
 }
 
+// Kept outside the component: both are side effects that only ever run from event handlers
+function messageId(prefix: string): string {
+  return `${prefix}-${Date.now()}`;
+}
+
+/** Register live-catalog products returned by the assistant so every tab can price them. */
+function registerLiveProducts(products: CanonicalProduct[]): void {
+  for (const product of products) PRODUCT_MAP[product.id] = product;
+  upsertCachedProducts(products);
+}
+
 export function AiChatTab({
   basket,
   economyMode,
@@ -504,6 +515,7 @@ export function AiChatTab({
   const [loading, setLoading] = useState(false);
   const bottomAnchorRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const focusInput = () => inputRef.current?.focus();
 
   useEffect(() => {
     try {
@@ -524,7 +536,7 @@ export function AiChatTab({
     if (!trimmed || loading) return;
 
     const userMsg: ChatMessage = {
-      id: `u-${Date.now()}`,
+      id: messageId('u'),
       role: 'user',
       text: trimmed,
     };
@@ -576,13 +588,12 @@ export function AiChatTab({
       const rawCard = data.card as AiStructuredCard | undefined;
       // Live-catalog products are registered once, then dropped from the saved chat message
       const liveProducts = rawCard?.liveProducts ?? [];
-      for (const product of liveProducts) PRODUCT_MAP[product.id] = product;
-      upsertCachedProducts(liveProducts);
+      registerLiveProducts(liveProducts);
       const returnedCard: AiStructuredCard | undefined = rawCard
         ? { ...rawCard, liveProducts: undefined }
         : undefined;
       const assistantMsg: ChatMessage = {
-        id: `a-${Date.now()}`,
+        id: messageId('a'),
         role: 'assistant',
         text: data.replyText,
         card: returnedCard,
@@ -615,7 +626,7 @@ export function AiChatTab({
         messages: [
           ...prev.messages,
           {
-            id: `err-${Date.now()}`,
+            id: messageId('err'),
             role: 'assistant',
             text: '',
             error: errMsg,
@@ -636,7 +647,7 @@ export function AiChatTab({
   const handleApplyCard = (
     msgId: string,
     card: AiStructuredCard,
-    selectedItems: Array<{ productId: string; quantity: number }>,
+    selectedItems: { productId: string; quantity: number }[],
     mode: 'replace_and_basket' | 'merge_and_basket' | 'merge_stay'
   ) => {
     const constraints = extractConstraintsFromCard(card);
@@ -736,7 +747,8 @@ export function AiChatTab({
                 tint: 'bg-[#FCE2DB]',
                 title: 'Cere o rețetă sau o listă',
                 text: 'Scrie ce gătești sau bugetul și primești produse reale, cu prețuri verificate.',
-                onClick: () => inputRef.current?.focus(),
+                // null = focus the chat input (wired directly below so the ref stays in a handler)
+                onClick: null,
               },
               {
                 key: 'basket',
@@ -758,7 +770,7 @@ export function AiChatTab({
               <button
                 key={key}
                 type="button"
-                onClick={onClick}
+                onClick={onClick ?? focusInput}
                 className="relative w-full min-h-[64px] px-4 py-3 flex items-center gap-3 text-left active:bg-[#EFE2D8]/50 after:content-[''] after:absolute after:bottom-0 after:left-[68px] after:right-0 after:h-px after:bg-[#EFE2D8] last:after:hidden"
               >
                 <span className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-[#421726] ${tint}`}>

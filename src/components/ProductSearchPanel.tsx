@@ -50,19 +50,25 @@ export function ProductSearchPanel({
   rowEnd,
 }: ProductSearchPanelProps) {
   const [query, setQuery] = useState('');
-  const [liveResults, setLiveResults] = useState<CanonicalProduct[]>([]);
-  const [status, setStatus] = useState<SearchStatus>('idle');
   const [retryTick, setRetryTick] = useState(0);
+  // Last completed search; results stay visible while the next one loads, as before
+  const [live, setLive] = useState<{ key: string; products: CanonicalProduct[]; failed: boolean }>(
+    { key: '', products: [], failed: false }
+  );
+  const trimmedQuery = query.trim();
+  const searchKey = trimmedQuery.length >= 2 ? `${trimmedQuery}\u0000${retryTick}` : '';
+  const liveResults: CanonicalProduct[] = searchKey ? live.products : [];
+  const status: SearchStatus = !searchKey
+    ? 'idle'
+    : live.key !== searchKey
+      ? 'loading'
+      : live.failed
+        ? 'error'
+        : 'idle';
 
   useEffect(() => {
-    const q = query.trim();
-    if (q.length < 2) {
-      setLiveResults([]);
-      setStatus('idle');
-      return;
-    }
-
-    setStatus('loading');
+    if (!searchKey) return;
+    const q = trimmedQuery;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
@@ -76,12 +82,10 @@ export function ProductSearchPanel({
         products.forEach((p) => {
           PRODUCT_MAP[p.id] = p;
         });
-        setLiveResults(products);
-        setStatus('idle');
+        setLive({ key: searchKey, products, failed: false });
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
-        setLiveResults([]);
-        setStatus('error');
+        setLive({ key: searchKey, products: [], failed: true });
       }
     }, 180);
 
@@ -89,7 +93,7 @@ export function ProductSearchPanel({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, retryTick]);
+  }, [searchKey, trimmedQuery]);
 
   const q = query.trim().toLowerCase();
   const useLive = q.length >= 2 && liveResults.length > 0;

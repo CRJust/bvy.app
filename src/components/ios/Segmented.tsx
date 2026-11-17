@@ -1,5 +1,5 @@
 interface SegmentedProps<T extends string | number> {
-  options: Array<{ id: T; label: string }>;
+  options: { id: T; label: string }[];
   value: T;
   onChange: (id: T) => void;
   label: string;

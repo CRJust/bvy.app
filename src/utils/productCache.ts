@@ -22,9 +22,7 @@ type LegacyOffer = StoreOffer & { isEstimated?: boolean };
 export function sanitizeLegacyProduct(product: CanonicalProduct): CanonicalProduct {
   const offers = {} as Record<StoreId, StoreOffer>;
   let realOfferCount = 0;
-  for (const [storeId, raw] of Object.entries(product.offers ?? {}) as Array<
-    [StoreId, LegacyOffer]
-  >) {
+  for (const [storeId, raw] of Object.entries(product.offers ?? {}) as [StoreId, LegacyOffer][]) {
     const { isEstimated, ...offer } = raw;
     if (isEstimated || offer.isUnavailable || !(offer.basePrice > 0)) {
       offers[storeId] = {
@@ -50,9 +48,7 @@ export function sanitizeLegacyProduct(product: CanonicalProduct): CanonicalProdu
 /** A saved product the catalog no longer lists: keep the line, but with no price anywhere. */
 export function markProductUnlisted(product: CanonicalProduct): CanonicalProduct {
   const offers = {} as Record<StoreId, StoreOffer>;
-  for (const [storeId, offer] of Object.entries(product.offers ?? {}) as Array<
-    [StoreId, StoreOffer]
-  >) {
+  for (const [storeId, offer] of Object.entries(product.offers ?? {}) as [StoreId, StoreOffer][]) {
     offers[storeId] = {
       storeId,
       basePrice: 0,

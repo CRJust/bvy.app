@@ -13,7 +13,7 @@ import {
 function liveProduct(
   id: string,
   name: string,
-  offers: Array<{ slug: string; price: number }>
+  offers: { slug: string; price: number }[]
 ): CanonicalProduct {
   const rows = offers.map(({ slug, ...row }) => ({
     product_id: id,

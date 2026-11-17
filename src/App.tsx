@@ -307,7 +307,7 @@ export default function App() {
   };
 
   const handleAddMany = (
-    items: Array<{ productId: string; quantity: number }>,
+    items: { productId: string; quantity: number }[],
     constraints?: Partial<MissionConstraints>
   ) => {
     setState((prev) => {
@@ -349,7 +349,7 @@ export default function App() {
   };
 
   const handleReplaceBasketFromAi = (
-    items: Array<{ productId: string; quantity: number }>,
+    items: { productId: string; quantity: number }[],
     constraints?: Partial<MissionConstraints>
   ) => {
     const cleanBasket: BasketItem[] = items
@@ -378,8 +378,8 @@ export default function App() {
 
   const handleApplyEdits = (
     removeIds: string[],
-    swaps: Array<{ fromProductId: string; toProductId: string; quantity: number }>,
-    addItems: Array<{ productId: string; quantity: number }>,
+    swaps: { fromProductId: string; toProductId: string; quantity: number }[],
+    addItems: { productId: string; quantity: number }[],
     replaceExistingQuantities = false,
     constraints?: Partial<MissionConstraints>
   ) => {
@@ -514,7 +514,7 @@ export default function App() {
 
   const handleApplyOptimizationPlan = (
     targetStoreId: StoreId | 'split',
-    swaps: Array<{ fromProductId: string; toProductId: string }>,
+    swaps: { fromProductId: string; toProductId: string }[],
     enableEconomyMode: boolean,
     snapshot: AppliedPlanSnapshot
   ) => {
@@ -696,12 +696,12 @@ export default function App() {
     }));
   };
 
-  const navItems: Array<{
+  const navItems: {
     id: ActiveTab;
     label: string;
     shortLabel: string;
     icon: typeof ShoppingBasket;
-  }> = [
+  }[] = [
     { id: 'home', label: 'Acasă', shortLabel: 'Acasă', icon: House },
     { id: 'ai', label: 'Listă', shortLabel: 'Listă', icon: ChefHat },
     { id: 'basket', label: 'Coș', shortLabel: 'Coș', icon: ShoppingBasket },

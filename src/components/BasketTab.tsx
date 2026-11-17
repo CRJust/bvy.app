@@ -10,7 +10,6 @@ import {
   Plus,
   Receipt,
   ScanBarcode,
-  Search,
   Settings,
   Share,
   ShoppingBasket,
@@ -35,7 +34,6 @@ import {
   formatRon,
   getEffectiveOffer,
   getRankedStores,
-  getSortedOffersForProduct,
   hasVerifiedPrice,
   resolveProductForMode,
   round2,
@@ -43,7 +41,6 @@ import {
 import {
   formatProductMeta,
   getBestVerifiedOffer,
-  getOfferDealLabel,
   getStruckPrice,
 } from '../utils/productDisplay.ts';
 import { CrossStorePriceGrid } from './CrossStorePriceGrid.tsx';
@@ -208,7 +205,7 @@ export function BasketTab({
   const [checkedOpen, setCheckedOpen] = useState(true);
   const [sortMode, setSortMode] = useState<'aisle' | 'recent'>('aisle');
   const [shared, setShared] = useState(false);
-  const [undo, setUndo] = useState<Array<{ productId: string; quantity: number }> | null>(null);
+  const [undo, setUndo] = useState<{ productId: string; quantity: number }[] | null>(null);
 
   useEffect(() => {
     if (!undo) return;

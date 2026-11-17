@@ -4,12 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   if (Platform.OS === 'web') {
+    // Only the module load is guarded; render errors are not catchable with try/catch anyway
+    let AppWeb: React.ComponentType | null = null;
     try {
-      const AppWeb = require('../src/App').default;
-      return <AppWeb />;
+      AppWeb = require('../src/App').default;
     } catch {
-      // Fallback
+      // Fallback to the WebView below
     }
+    if (AppWeb) return <AppWeb />;
   }
 
   const { WebView } = require('react-native-webview');

@@ -75,7 +75,7 @@ interface PlanScreenProps {
   onSelectStore: (storeId: StoreId | 'split', nextEconomyMode?: boolean) => void;
   onApplyPlan: (
     storeId: StoreId | 'split',
-    swaps: Array<{ fromProductId: string; toProductId: string }>,
+    swaps: { fromProductId: string; toProductId: string }[],
     enableEconomyMode: boolean,
     snapshot: AppliedPlanSnapshot
   ) => void;
@@ -263,7 +263,7 @@ export function PlanScreen({
       ? normalizedBase
       : resolveProductForMode(normalizedBase, true, PRODUCT_MAP, rejectedSwapIds).resolvedProduct;
   };
-  const planLines: Array<PlanLine & { storeId: StoreId | null }> = plan
+  const planLines: (PlanLine & { storeId: StoreId | null })[] = plan
     ? basket.flatMap((item) => {
         const product = resolvePlanProduct(item);
         if (!product) return [];
