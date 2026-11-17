@@ -11,6 +11,21 @@
   --color-leek: #DBE3C6;
   --color-leek-ink: #263B1D;
   --color-muted: #765B60;
+
+  /* Added from design-system/design-tokens.css (single source of truth) */
+  --color-cherry-soft: #5A2436;
+  --color-leek-dark: #3A542A;
+  --color-paper-rule: #E8C5BA;
+
+  --radius-tile: 12px;
+  --radius-card: 16px;
+  --radius-panel: 20px;
+
+  --shadow-card: 0 4px 10px rgba(66, 23, 38, 0.04);
+  --shadow-elevated: 0 8px 18px rgba(66, 23, 38, 0.08);
+  --shadow-floating: 0 8px 24px rgba(66, 23, 38, 0.18);
+
+  --ease-beavy-out: cubic-bezier(0.215, 0.61, 0.355, 1);
 }
 
 @layer base {

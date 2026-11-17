@@ -10,7 +10,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:vite": "vite build",
-    "test": "node --test src/utils/pricing.test.ts src/utils/ean.test.ts",
+    "test": "node --test src/utils/pricing.test.ts src/utils/ean.test.ts src/utils/smartBasketView.test.ts",
     "clean": "rm -rf dist server.js",
     "lint": "expo lint"
   },
