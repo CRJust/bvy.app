@@ -26,7 +26,6 @@ import type {
   StoreId,
 } from '../types.ts';
 import {
-  calculateStoreBasketSummary,
   computeDeliveryFee,
   computeOptimizationPlan,
   computeSplitTwoStores,
@@ -47,6 +46,15 @@ import {
   type PlanLine,
   type PlanStoreGroup,
 } from './PlanShoppingList.tsx';
+import { BasketBottomBar } from './smart-basket/BasketBottomBar.tsx';
+import { SavingsCard } from './smart-basket/SavingsCard.tsx';
+import { StrategySelector } from './smart-basket/StrategySelector.tsx';
+import {
+  buildStrategyOptions,
+  getRecommendedStrategy,
+  strategyEngineSettings,
+  type BasketStrategyId,
+} from '../utils/smartBasketView.ts';
 
 interface PlanScreenProps {
   basket: BasketItem[];
@@ -98,9 +106,9 @@ export function PlanScreen({
   onNavigateToBasket,
   onNavigateToAi,
 }: PlanScreenProps) {
-  const [strategy, setStrategy] = useState<OptimizationStrategy>('balanced');
+  // null = follow the engine's recommendation until the shopper picks a strategy
+  const [strategyChoice, setStrategyChoice] = useState<BasketStrategyId | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [showVariants, setShowVariants] = useState(false);
   const [showWhyDetails, setShowWhyDetails] = useState(false);
   const [showAllRankedStores, setShowAllRankedStores] = useState(false);
   const [showProductMatrix, setShowProductMatrix] = useState(false);
@@ -143,7 +151,7 @@ export function PlanScreen({
     filterMode,
     'cheapest',
     PRODUCT_MAP,
-    optOptions
+    { ...optOptions, maxStores: 2 }
   );
   const singleStorePlan = computeOptimizationPlan(
     basket,
@@ -157,15 +165,6 @@ export function PlanScreen({
       maxStores: 1,
     }
   );
-  const fidelityPlan = computeOptimizationPlan(
-    basket,
-    activeCards,
-    false,
-    filterMode,
-    'fidelity',
-    PRODUCT_MAP,
-    optOptions
-  );
   const economyPreviewPlan = !economyMode
     ? computeOptimizationPlan(
         basket,
@@ -178,56 +177,53 @@ export function PlanScreen({
       )
     : null;
 
-  const plan =
-    strategy === 'balanced'
-      ? balancedPlan
-      : strategy === 'cheapest'
-        ? cheapestPlan
-        : economyMode
-          ? singleStorePlan
-          : fidelityPlan;
-
-  const potentialEconomySavings =
-    !economyMode && balancedPlan && economyPreviewPlan
-      ? Math.max(0, round2(balancedPlan.totalWithDelivery - economyPreviewPlan.totalWithDelivery))
-      : 0;
-
-  const currentBasketSummary =
-    hasChosenStore && activeStoreId !== 'split'
-      ? calculateStoreBasketSummary(
-          basket,
-          activeStoreId,
-          activeCards,
-          economyMode,
-          filterMode,
-          PRODUCT_MAP,
-          economyMode ? rejectedSwapIds : []
-        )
-      : null;
-  const savingsVsCurrentBasket =
-    currentBasketSummary && plan
-      ? Math.round((currentBasketSummary.totalWithDelivery - plan.totalWithDelivery) * 100) / 100
-      : 0;
-
   const twoStoreCandidate = computeSplitTwoStores(
     basket,
     activeCards,
-    strategy === 'fidelity' ? false : economyMode,
+    economyMode,
     filterMode,
     PRODUCT_MAP,
     rejectedStoreIds,
     economyMode ? rejectedSwapIds : []
   );
 
-  const runnerUpSingleStore =
-    plan && !plan.isSplit
-      ? rankedStores.find(
-          (r) => r.storeId !== plan.storeId && r.missingCount === plan.missingCount
-        ) ?? null
-      : null;
-  const runnerUpSavings =
-    runnerUpSingleStore && plan && !plan.isSplit
-      ? round2(runnerUpSingleStore.totalWithDelivery - plan.totalWithDelivery)
+  // The three strategies come straight from the plans above; nothing is re-priced here.
+  const strategyOptions = buildStrategyOptions({
+    singlePlan: singleStorePlan,
+    lowestPlan: cheapestPlan,
+    split: twoStoreCandidate,
+  });
+  // Recommendation always comes from the 2-store balanced plan, independent of the current pick
+  const recommendationPlan = computeOptimizationPlan(
+    basket,
+    activeCards,
+    economyMode,
+    filterMode,
+    'balanced',
+    PRODUCT_MAP,
+    { ...optOptions, maxStores: 2 }
+  );
+  const recommendedChoice = getRecommendedStrategy(recommendationPlan, strategyOptions);
+  const requestedChoice: BasketStrategyId =
+    strategyChoice ?? (missionConstraints.maxStores === 1 ? 'single' : recommendedChoice);
+  const activeChoice: BasketStrategyId = strategyOptions[requestedChoice].selectable
+    ? requestedChoice
+    : 'single';
+  // Widened on purpose: the shared helpers below still accept every engine strategy
+  const strategy = strategyEngineSettings(activeChoice, economyMode).strategy as OptimizationStrategy;
+  const plan = strategyOptions[activeChoice].plan;
+
+  const handleSelectStrategy = (id: BasketStrategyId) => {
+    if (!strategyOptions[id].selectable) return;
+    setStrategyChoice(id);
+    const { maxStores } = strategyEngineSettings(id, economyMode);
+    // Keep the shared store limit in sync so the basket and receipt use the same plan
+    if (maxStores !== missionConstraints.maxStores) onChangeMaxStores(maxStores);
+  };
+
+  const potentialEconomySavings =
+    !economyMode && balancedPlan && economyPreviewPlan
+      ? Math.max(0, round2(balancedPlan.totalWithDelivery - economyPreviewPlan.totalWithDelivery))
       : 0;
 
   const deliveryStores = rankedStores.filter((r) => {
@@ -235,15 +231,16 @@ export function PlanScreen({
     return ch === 'online' || (filterMode === 'online' && ch === 'hybrid');
   });
 
-  const fullBalancedPlan = computeOptimizationPlan(
+  // Same plan without the shopper's swap rejections, so rejected swaps stay listed and can be re-enabled
+  const fullActivePlan = computeOptimizationPlan(
     basket,
     activeCards,
     economyMode,
     filterMode,
-    'balanced',
+    strategy,
     PRODUCT_MAP,
     {
-      maxStores: missionConstraints.maxStores,
+      maxStores: strategyEngineSettings(activeChoice, economyMode).maxStores,
       excludedStoreIds: rejectedStoreIds,
       excludedSwapFromIds: [],
     }
@@ -284,6 +281,7 @@ export function PlanScreen({
             product,
             offer,
             alternative: offer ? null : getBestVerifiedOffer(product, activeCards),
+            planStoreStatus: storeOffer?.isOutOfStock ? 'out_of_stock' : 'unavailable',
             storeId: offer ? storeId : null,
           },
         ];
@@ -591,9 +589,7 @@ export function PlanScreen({
       {/* Hero Recommendation Card (Calm, Direct Decision — NOT a KPI dashboard) */}
       {plan && (() => {
         const displaySwaps =
-          strategy === 'balanced' && fullBalancedPlan
-            ? fullBalancedPlan.swapsApplied
-            : plan.swapsApplied;
+          economyMode && fullActivePlan ? fullActivePlan.swapsApplied : plan.swapsApplied;
 
         const splitBreakdown =
           plan.isSplit && plan.splitResult
@@ -612,7 +608,8 @@ export function PlanScreen({
                   );
                   const shortLabel = `${item.quantity}× ${resolvedProduct.canonicalName.split(' ').slice(0, 2).join(' ')}`;
                   if (assigned === plan.splitResult!.storeA) itemsA.push(shortLabel);
-                  else itemsB.push(shortLabel);
+                  // Lines the split leaves out (no verified price) belong to neither store
+                  else if (assigned === plan.splitResult!.storeB) itemsB.push(shortLabel);
                 }
                 return { itemsA, itemsB };
               })()
@@ -623,82 +620,14 @@ export function PlanScreen({
             className="space-y-4"
             aria-label="Verdict unde merită să mergi"
           >
-            <Segmented
-              label="Număr de magazine"
-              options={[
-                { id: 1 as const, label: '1 magazin' },
-                { id: 2 as const, label: 'Până la 2' },
-              ]}
-              value={missionConstraints.maxStores}
-              onChange={onChangeMaxStores}
+            <StrategySelector
+              options={strategyOptions}
+              value={activeChoice}
+              recommended={recommendedChoice}
+              onChange={handleSelectStrategy}
             />
 
-            {/* Main Answer: Store + Total + Plain-language reason */}
-            <div className="rounded-[20px] bg-[#421726] p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-[#DBE3C6]">
-                  {plan.isSplit
-                    ? 'Merită să mergi la 2 magazine'
-                    : 'Cel mai avantajos · 1 singur drum'}
-                </p>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                  Mergi la {plan.storeLabel}
-                </h2>
-                {planPricedCount > 0 && (
-                  <p
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold tabular-nums ${
-                      plan.missingCount === 0
-                        ? 'bg-[#DBE3C6] text-[#263B1D]'
-                        : 'bg-[#FCE2DB] text-[#421726]'
-                    }`}
-                  >
-                    {plan.missingCount === 0 && <Check className="w-3.5 h-3.5" aria-hidden="true" />}
-                    <span>
-                      {plan.availableCount} din {planPricedCount} produse disponibile
-                    </span>
-                  </p>
-                )}
-                <p className="text-xs sm:text-sm text-[#FCE2DB] tabular-nums leading-relaxed">
-                  {runnerUpSingleStore && runnerUpSavings > 0 ? (
-                    <>
-                      <strong className="text-[#DBE3C6]">
-                        Economisești {formatRon(runnerUpSavings)} față de{' '}
-                        {STORE_MAP[runnerUpSingleStore.storeId].shortName}
-                      </strong>
-                      {plan.savingsVsAverage > 0 &&
-                        ` · ${formatRon(plan.savingsVsAverage)} sub media pieței`}
-                    </>
-                  ) : plan.savingsVsAverage > 0 ? (
-                    <strong className="text-[#DBE3C6]">
-                      Economisești {formatRon(plan.savingsVsAverage)} față de media pieței
-                    </strong>
-                  ) : (
-                    <span>
-                      {plan.missingCount === 0
-                        ? 'Cel mai mic total real pentru coșul tău'
-                        : 'Magazinul care acoperă cele mai multe produse din coș'}
-                    </span>
-                  )}
-                  {currentBasketSummary && savingsVsCurrentBasket > 0 && (
-                    <span>
-                      {` · -${formatRon(savingsVsCurrentBasket)} vs ${STORE_MAP[currentBasketSummary.storeId].shortName}`}
-                    </span>
-                  )}
-                </p>
-              </div>
-
-              <div className="sm:text-right shrink-0 pt-1 sm:pt-0">
-                <p className="text-3xl sm:text-4xl font-extrabold text-white tabular-nums">
-                  {formatRon(plan.totalWithDelivery)}
-                </p>
-                <p className="text-xs text-[#FCE2DB] tabular-nums mt-0.5">
-                  {plan.deliveryFee === 0
-                    ? 'Fără taxă livrare'
-                    : `Include livrare +${formatRon(plan.deliveryFee)}`}
-                  {plan.cardSavings > 0 && ` · Carduri -${formatRon(plan.cardSavings)}`}
-                </p>
-              </div>
-            </div>
+            <SavingsCard plan={plan} option={strategyOptions[activeChoice]} />
 
             {/* Budget status line (only if user set a budget) */}
             {missionConstraints.budgetRon && (
@@ -797,30 +726,11 @@ export function PlanScreen({
             {displaySwaps.length > 0 && (
               <div className="border-t border-[#EFE2D8] pt-3.5 space-y-2">
                 <p className="text-xs font-bold text-[#765B60]">
-                  {strategy === 'balanced'
-                    ? 'Înlocuiri propuse (debifează dacă preferi brandul inițial):'
-                    : 'Înlocuiri incluse:'}
+                  Înlocuiri propuse (debifează dacă preferi brandul inițial):
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
                   {displaySwaps.map((sw) => {
                     const isKept = !rejectedSwapIds.includes(sw.fromProductId);
-                    if (strategy !== 'balanced') {
-                      return (
-                        <div
-                          key={`${sw.fromProductId}-${sw.toProductId}`}
-                          className="flex items-start justify-between gap-2 text-[#421726] leading-snug"
-                        >
-                          <span>
-                            <span className="text-[#765B60]">{sw.fromName}</span> →{' '}
-                            <strong>{sw.toName}</strong>
-                          </span>
-                          <span className="font-bold text-[#263B1D] tabular-nums shrink-0">
-                            -{formatRon(sw.savings)}
-                          </span>
-                        </div>
-                      );
-                    }
-
                     return (
                       <button
                         key={`${sw.fromProductId}-${sw.toProductId}`}
@@ -860,15 +770,6 @@ export function PlanScreen({
             {/* Calm Action Bar */}
             <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-                <button
-                  type="button"
-                  onClick={buildSnapshotAndApply}
-                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-3 min-h-[50px] rounded-[14px] bg-[#421726] text-white text-[15px] font-bold hover:bg-[#5A2236] transition-colors whitespace-nowrap"
-                >
-                  <span>Alege acest plan</span>
-                  <ArrowRight className="w-4 h-4" aria-hidden="true" />
-                </button>
-
                 <button
                   type="button"
                   disabled={rankedStores.length <= 1}
@@ -941,102 +842,6 @@ export function PlanScreen({
                 </p>
               </div>
             )}
-            <div className="pt-3 border-t border-[#EFE2D8] space-y-3">
-              <button
-                type="button"
-                onClick={() => setShowVariants((prev) => !prev)}
-                aria-expanded={showVariants}
-                className="w-full min-h-[44px] flex items-center justify-between gap-2 text-sm font-bold text-[#421726]"
-              >
-                <span>Alte variante de plan</span>
-                {showVariants ? (
-                  <ChevronUp className="w-4 h-4 text-[#765B60]" aria-hidden="true" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-[#765B60]" aria-hidden="true" />
-                )}
-              </button>
-              {showVariants && (
-                <div>
-            {/* Subtle 3-Strategy Segmented Switcher inside the card */}
-            {balancedPlan && cheapestPlan && singleStorePlan && fidelityPlan && (
-              <div
-                className="grid grid-cols-3 w-full items-center gap-1 p-1 bg-[#FFF6EE] border border-[#EFE2D8] rounded-[18px]"
-                role="tablist"
-                aria-label="Compară și alege varianta de optimizare"
-              >
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={strategy === 'balanced'}
-                  onClick={() => setStrategy('balanced')}
-                  className={`flex flex-col items-center justify-center py-2 px-2 rounded-[14px] transition-colors ${
-                    strategy === 'balanced'
-                      ? 'bg-[#421726] text-white'
-                      : 'text-[#765B60] hover:text-[#421726]'
-                  }`}
-                >
-                  <span className="text-[11px] font-bold leading-tight opacity-85">
-                    Balanced
-                  </span>
-                  <span className="text-xs sm:text-sm font-extrabold leading-tight tabular-nums whitespace-nowrap mt-0.5">
-                    {formatRon(balancedPlan.totalWithDelivery)}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={strategy === 'cheapest'}
-                  onClick={() => setStrategy('cheapest')}
-                  className={`flex flex-col items-center justify-center py-2 px-2 rounded-[14px] transition-colors ${
-                    strategy === 'cheapest'
-                      ? 'bg-[#421726] text-white'
-                      : 'text-[#765B60] hover:text-[#421726]'
-                  }`}
-                >
-                  <span className="text-[11px] font-bold leading-tight opacity-85">
-                    Cel mai ieftin
-                  </span>
-                  <span className="text-xs sm:text-sm font-extrabold leading-tight tabular-nums whitespace-nowrap mt-0.5">
-                    {formatRon(cheapestPlan.totalWithDelivery)}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={
-                    missionConstraints.maxStores === 1 &&
-                    strategy === (economyMode ? 'cheapest' : 'fidelity')
-                  }
-                  onClick={() => {
-                    onChangeMaxStores(1);
-                    setStrategy(economyMode ? 'cheapest' : 'fidelity');
-                  }}
-                  className={`flex flex-col items-center justify-center py-2 px-2 rounded-[14px] transition-colors ${
-                    missionConstraints.maxStores === 1 &&
-                    strategy === (economyMode ? 'cheapest' : 'fidelity')
-                      ? 'bg-[#421726] text-white'
-                      : 'text-[#765B60] hover:text-[#421726]'
-                  }`}
-                >
-                  <span className="text-[11px] font-bold leading-tight opacity-85">
-                    1 magazin
-                  </span>
-                  <span className="text-xs sm:text-sm font-extrabold leading-tight tabular-nums whitespace-nowrap mt-0.5">
-                    {formatRon(
-                      economyMode
-                        ? singleStorePlan.totalWithDelivery
-                        : fidelityPlan.totalWithDelivery
-                    )}
-                  </span>
-                </button>
-              </div>
-            )}
-
-                </div>
-              )}
-            </div>
           </section>
         );
       })()}
@@ -1873,6 +1678,18 @@ export function PlanScreen({
           </div>
         );
       })()}
+      {plan && (
+        <>
+          {/* Reserve room so the sticky bar never covers the last rows */}
+          <div className="h-24 md:h-20" aria-hidden="true" />
+          <BasketBottomBar
+            label={plan.storeLabel}
+            total={plan.totalWithDelivery}
+            actionLabel="Alege acest plan"
+            onAction={buildSnapshotAndApply}
+          />
+        </>
+      )}
     </div>
   );
 }
