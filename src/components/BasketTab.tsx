@@ -338,13 +338,13 @@ export function BasketTab({
         className="relative after:content-[''] after:absolute after:bottom-0 after:left-[84px] after:right-0 after:h-px after:bg-[#EFE2D8] last:after:hidden"
       >
         <article className={`px-4 py-3 transition-colors ${checked ? 'opacity-60' : ''}`}>
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3">
             <button
               type="button"
               onClick={() => setExpandedProductId(expanded ? null : item.productId)}
               aria-expanded={expanded}
               aria-label={`Prețuri la toate magazinele pentru ${resolvedProduct.canonicalName}`}
-              className="flex-1 min-w-0 flex items-center gap-3 text-left"
+              className="flex-1 min-w-0 flex items-start gap-3 text-left"
             >
               <ProductThumbnail
                 category={resolvedProduct.category}
@@ -383,15 +383,19 @@ export function BasketTab({
                   <p className="text-base font-extrabold text-[#421726] tabular-nums">
                     {formatRon(lineTotal)}
                   </p>
-                  {struckPrice !== null && (
-                    <p className="text-[11px] text-[#765B60] line-through tabular-nums">
-                      {formatRon(struckPrice * item.quantity)}
-                    </p>
-                  )}
-                  {offer.usedCardProgram && (
-                    <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full bg-[#DBE3C6] text-[#263B1D] text-[11px] font-bold">
-                      Card
-                    </span>
+                  {(struckPrice !== null || offer.usedCardProgram) && (
+                    <div className="flex items-center justify-end gap-1.5">
+                      {offer.usedCardProgram && (
+                        <span className="px-1.5 rounded-full bg-[#DBE3C6] text-[#263B1D] text-[10px] font-bold leading-[18px]">
+                          Card
+                        </span>
+                      )}
+                      {struckPrice !== null && (
+                        <p className="text-[11px] text-[#765B60] line-through tabular-nums">
+                          {formatRon(struckPrice * item.quantity)}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
@@ -1209,7 +1213,7 @@ export function BasketTab({
       )}
 
       <div
-        className="fixed bottom-16 md:bottom-0 left-0 right-0 z-30 bg-[#FFF6EE]/80 backdrop-blur-xl border-t border-[#EFE2D8]/70 px-4 py-3"
+        className="fixed bottom-16 md:bottom-0 left-0 right-0 z-30 bg-[#FFF6EE] border-t border-[#EFE2D8] px-4 py-3"
         data-testid="mobile-basket-compare-dock"
       >
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">

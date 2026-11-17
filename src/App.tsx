@@ -922,10 +922,10 @@ export default function App() {
 
       {/* Mobile floating tab bar: dark pill, active tab shows its label */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 px-3 pb-2 pointer-events-none"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 px-3 pb-2 bg-[#FFF6EE]"
         aria-label="Navigare mobilă"
       >
-        <div className="pointer-events-auto h-14 px-1.5 rounded-full bg-[#421726]/95 backdrop-blur-xl shadow-[0_8px_24px_rgba(66,23,38,0.25)] flex items-center justify-between">
+        <div className="h-14 px-1.5 rounded-full bg-[#421726]/95 backdrop-blur-xl shadow-[0_8px_24px_rgba(66,23,38,0.25)] flex items-center justify-between">
           {navItems.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;

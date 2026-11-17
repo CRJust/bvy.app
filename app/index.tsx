@@ -34,6 +34,7 @@ export default function HomeScreen() {
           </View>
         )}
         javaScriptEnabled
+        showsVerticalScrollIndicator={false}
         domStorageEnabled
         allowsInlineMediaPlayback
       />
