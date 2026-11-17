@@ -127,7 +127,7 @@ export function ProductSearchPanel({
             autoFocus={bare}
             className={`w-full min-h-[44px] text-ellipsis pl-10 ${trailing ? 'pr-20' : 'pr-10'} py-2 text-[15px] text-[#421726] focus:outline-none ${
               inline
-                ? 'rounded-[12px] bg-[#EFE2D8]/70 border border-transparent focus:border-[#421726]'
+                ? 'rounded-[14px] bg-white border border-[#EFE2D8] shadow-[0_4px_14px_rgba(66,23,38,0.06)] placeholder:text-[#765B60]/80 focus:border-[#421726]'
                 : 'rounded-full bg-[#FFF6EE] border border-[#EFE2D8] focus:border-[#421726]'
             }`}
           />

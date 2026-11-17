@@ -32,7 +32,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   'Cămară & Paste': 'Cămară',
   'Cafea & Băuturi': 'Băuturi',
 };
-const CATEGORY_TINTS = ['bg-[#DBE3C6]', 'bg-[#FCE2DB]', 'bg-[#EFE2D8]', 'bg-[#DBE3C6]', 'bg-[#FCE2DB]'];
+// Brand pastels only (leek, grapefruit, rule, buttermilk-strawberry wash)
+const CATEGORY_TINTS = ['bg-[#DBE3C6]', 'bg-[#FCE2DB]', 'bg-[#EFE2D8]', 'bg-[#E9EDD9]', 'bg-[#FDECE6]'];
 const CATEGORIES = Object.keys(CATEGORY_LABELS).filter((c) => CATEGORY_IMAGES[c]);
 
 export function HomeTab({
@@ -71,10 +72,15 @@ export function HomeTab({
     : [];
 
   return (
-    <div className="max-w-3xl mx-auto space-y-7">
-      <header className="pt-2">
-        <p className="text-[15px] font-semibold text-[#765B60]">Bună,</p>
-        <h1 className="mt-0.5 text-[34px] leading-[1.1] font-extrabold tracking-tight text-[#421726] text-balance">
+    <div className="relative isolate max-w-3xl mx-auto space-y-7">
+      {/* One soft warm wash behind the greeting and search */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -inset-x-4 -top-4 h-72 bg-gradient-to-b from-[#FCE2DB]/70 to-transparent -z-10"
+      />
+      <header className="pt-4">
+        <p className="text-[16px] font-semibold text-[#765B60]">Bună,</p>
+        <h1 className="mt-1 text-[36px] leading-[1.08] font-extrabold tracking-[-0.03em] text-[#421726] text-balance">
           Ce punem azi în coș?
         </h1>
       </header>
@@ -108,19 +114,19 @@ export function HomeTab({
               key={category}
               type="button"
               onClick={() => setOpenCategory(category)}
-              className="shrink-0 w-[84px] text-center"
+              className="shrink-0 w-[92px] text-center group"
             >
               <span
-                className={`block w-[84px] h-[96px] rounded-t-[42px] rounded-b-[16px] overflow-hidden ${CATEGORY_TINTS[idx % CATEGORY_TINTS.length]}`}
+                className={`block w-[92px] h-[100px] rounded-t-[30px] rounded-b-[18px] overflow-hidden transition-transform duration-150 group-active:scale-[0.97] ${CATEGORY_TINTS[idx % CATEGORY_TINTS.length]}`}
               >
                 <img
                   src={CATEGORY_IMAGES[category]}
                   alt=""
                   loading="lazy"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover mix-blend-multiply"
                 />
               </span>
-              <span className="mt-1.5 block text-[13px] font-bold text-[#421726]">
+              <span className="mt-2 block text-[13px] font-bold text-[#421726]">
                 {CATEGORY_LABELS[category]}
               </span>
             </button>
@@ -131,9 +137,21 @@ export function HomeTab({
       <button
         type="button"
         onClick={() => onNavigateTab(totalUnits > 0 ? 'matrix' : 'ai')}
-        className="w-full rounded-[20px] bg-[#421726] text-left p-5 flex items-center justify-between gap-4"
+        className="relative w-full overflow-hidden rounded-[22px] bg-[#421726] text-left p-5 min-h-[148px] flex items-center shadow-[0_8px_18px_rgba(66,23,38,0.12)]"
       >
-        <span className="min-w-0">
+        {/* Food imagery on the right, fading into cherry so the text stays readable */}
+        <img
+          src={CATEGORY_IMAGES['Fructe & Legume']}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          className="absolute right-0 top-0 h-full w-[46%] object-cover"
+        />
+        <span
+          aria-hidden="true"
+          className="absolute right-0 top-0 h-full w-[46%] bg-gradient-to-r from-[#421726] via-[#421726]/40 to-transparent"
+        />
+        <span className="relative min-w-0 max-w-[62%]">
           <span className="block text-xl font-extrabold text-white leading-snug text-balance tabular-nums">
             {totalUnits > 0 && bestStore
               ? `Coșul tău iese cel mai ieftin la ${STORE_MAP[bestStore.storeId].shortName}`
@@ -155,12 +173,13 @@ export function HomeTab({
               return (
                 <article
                   key={product.id}
-                  className="shrink-0 w-[152px] bg-white rounded-[16px] p-3 flex flex-col"
+                  className="shrink-0 w-[156px] bg-white rounded-[18px] p-2.5 flex flex-col shadow-[0_4px_14px_rgba(66,23,38,0.06)]"
                 >
                   <ProductThumbnail
                     category={product.category}
                     name={product.canonicalName}
                     imageUrl={product.imageUrl}
+                    size="lg"
                   />
                   <h3 className="mt-2 text-sm font-bold text-[#421726] leading-snug line-clamp-2 min-h-[2.5rem]">
                     {product.canonicalName}

@@ -8,7 +8,8 @@ interface ProductThumbnailProps {
   name: string;
   /** Real product photo; falls back to the category image, then to an icon. */
   imageUrl?: string;
-  size?: 'sm' | 'md';
+  /** sm/md: square tiles in rows; lg: full-width image area of a product card. */
+  size?: 'sm' | 'md' | 'lg';
 }
 
 function CategoryFallbackIcon({ category }: { category: ProductCategory }) {
@@ -34,12 +35,17 @@ export function ProductThumbnail({ category, name, imageUrl, size = 'md' }: Prod
     (candidate): candidate is string => Boolean(candidate) && !failedSources.includes(candidate!)
   );
   const isProductPhoto = Boolean(src) && (src === imageUrl || src === proxied);
-  const dims = size === 'sm' ? 'w-11 h-11 rounded-[12px]' : 'w-14 h-14 rounded-[12px]';
+  const dims =
+    size === 'lg'
+      ? 'w-full h-[104px] rounded-[14px]'
+      : size === 'sm'
+        ? 'w-12 h-12 rounded-[12px]'
+        : 'w-14 h-14 rounded-[12px]';
 
   if (!src) {
     return (
       <div
-        className={`${dims} shrink-0 bg-[#FCE2DB]/70 border border-[#EFE2D8] flex items-center justify-center`}
+        className={`${dims} shrink-0 bg-[#FCE2DB]/70 flex items-center justify-center`}
         aria-hidden="true"
       >
         <CategoryFallbackIcon category={category} />
@@ -49,9 +55,7 @@ export function ProductThumbnail({ category, name, imageUrl, size = 'md' }: Prod
 
   return (
     <div
-      className={`${dims} shrink-0 overflow-hidden border border-[#EFE2D8] ${
-        isProductPhoto ? 'bg-white' : 'bg-[#FFF6EE]'
-      }`}
+      className={`${dims} shrink-0 overflow-hidden bg-[#FFF6EE]`}
     >
       <img
         key={src}
@@ -61,8 +65,11 @@ export function ProductThumbnail({ category, name, imageUrl, size = 'md' }: Prod
         decoding="async"
         referrerPolicy="no-referrer"
         onError={() => setFailedSources((prev) => (prev.includes(src) ? prev : [...prev, src]))}
+        // multiply lets the photo's white backdrop take the tile colour (frameless cut-out look)
         className={
-          isProductPhoto ? 'w-full h-full object-contain p-1' : 'w-full h-full object-cover'
+          isProductPhoto
+            ? 'w-full h-full object-contain p-1.5 mix-blend-multiply'
+            : 'w-full h-full object-cover mix-blend-multiply'
         }
       />
     </div>
