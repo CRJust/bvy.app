@@ -1,0 +1,42 @@
+name: Open Food Facts România (export)
+
+# Descarcă exportul OFF (~1,5 GB) și păstrează doar produsele din România cu EAN valid.
+# Nu scrie în Supabase: rezultatul e un artefact (off-ro.tsv.gz) pentru potrivirea EAN-urilor.
+# Date: © contribuitorii Open Food Facts, licență ODbL.
+
+on:
+  schedule:
+    - cron: '0 3 1 * *'  # lunar, în prima zi a lunii
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: off-ro-export
+  cancel-in-progress: false
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Teste
+        working-directory: tools/off-ro
+        run: python3 -m unittest -v test_extract_ro
+
+      - name: Descarcă și filtrează
+        run: python3 tools/off-ro/extract_ro.py --out off-ro.tsv.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: off-ro
+          path: off-ro.tsv.gz
+          retention-days: 35
+          if-no-files-found: error
