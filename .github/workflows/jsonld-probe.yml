@@ -1,0 +1,42 @@
+name: Sondă JSON-LD (Lidl, Penny, Profi, Atac)
+
+# Doar citire: ia ~20 de pagini de produs per retailer din sitemap (respectând robots.txt, 1 cerere/s)
+# și raportează ce publică schema.org/Product (gtin, preț, monedă). Nu scrie în Supabase sau în repo.
+
+on:
+  workflow_dispatch:
+    inputs:
+      n:
+        description: "Pagini per retailer"
+        default: "20"
+      sites:
+        description: "Retailerii (separați prin virgulă)"
+        default: "lidl,penny,profi,atac"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Teste
+        working-directory: tools/jsonld-probe
+        run: python3 -m unittest -v test_probe
+
+      - name: Sondă
+        run: python3 tools/jsonld-probe/probe.py --out jsonld-probe.json --n "${{ inputs.n }}" --sites "${{ inputs.sites }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jsonld-probe
+          path: jsonld-probe.json
+          retention-days: 14
+          if-no-files-found: error
